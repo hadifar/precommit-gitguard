@@ -13,7 +13,7 @@ about stale branches.
 
 ```yaml
 - repo: https://github.com/hadifar/precommit-gitguard
-  rev: v0.1.0  # pin to a tag
+  rev: v0.1.1  # pin to a tag
   hooks:
     - id: no-direct-commit
     - id: no-direct-push
@@ -63,7 +63,7 @@ watched for staleness:
 
 ```yaml
 - repo: https://github.com/hadifar/precommit-gitguard
-  rev: v0.1.0
+  rev: v0.1.1
   hooks:
     - id: no-direct-commit
       args: [--protected, master, dev, staging]

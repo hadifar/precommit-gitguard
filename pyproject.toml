@@ -37,6 +37,7 @@ max-complexity = 5
 name = "cz_conventional_commits"
 version_provider = "pep621"
 version_scheme = "semver"
+version_files = ["README.md:rev: v"]
 update_changelog_on_bump = true
 tag_format = "v$version"
 major_version_zero = true
