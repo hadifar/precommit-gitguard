@@ -18,6 +18,7 @@ repos:
       - id: pyright
         name: "🐍 python · Check types"
         stages: [pre-push]
+        pass_filenames: false
 
   - repo: local
     hooks:
