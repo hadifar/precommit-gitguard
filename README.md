@@ -1,5 +1,10 @@
 # gitguard
 
+[![CI](https://github.com/hadifar/precommit-gitguard/actions/workflows/ci.yml/badge.svg)](https://github.com/hadifar/precommit-gitguard/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/github/v/tag/hadifar/precommit-gitguard?label=version&sort=semver)](https://github.com/hadifar/precommit-gitguard/tags)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://pre-commit.com)
+[![License: MIT](https://img.shields.io/github/license/hadifar/precommit-gitguard)](LICENSE)
+
 Gitflow guardrails, packaged as reusable [pre-commit](https://pre-commit.com) hooks:
 protect branches from direct commits/pushes, enforce branch naming, and warn
 about stale branches.
@@ -51,19 +56,29 @@ Override via `args`:
 Every hook can be bypassed deliberately with `git commit --no-verify` /
 `git push --no-verify`.
 
-## Development
+To add a third long-lived branch (e.g. `staging`), pass it to every hook's
+`--protected` / `--exempt` / `--watch` flag alongside `master` and `dev`, so
+it's treated the same way -- naming-exempt, commit/push protected, and
+watched for staleness:
 
-```console
-pip install -e ".[dev]"
-pytest
-pre-commit run --all-files
+```yaml
+- repo: https://github.com/hadifar/precommit-gitguard
+  rev: v0.1.0
+  hooks:
+    - id: no-direct-commit
+      args: [--protected, master, dev, staging]
+    - id: no-direct-push
+      args: [--protected, master, dev, staging]
+    - id: branch-name
+      args: [--exempt, master, dev, staging]
+    - id: stale-branch
+      args: [--watch, master, dev, staging]
 ```
 
-Each hook is a small `argparse` CLI under `src/gitguard/`, exposed via a
-`console_scripts` entry point in `pyproject.toml` and wired up in
-`.pre-commit-hooks.yaml`. Shared git plumbing lives in `src/gitguard/_common.py`.
+## Contributing
 
-## Releasing
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Tag a release (`git tag vX.Y.Z && git push --tags`); consumers pin `rev` to
-that tag in their own `.pre-commit-config.yaml`. Never move a published tag.
+## License
+
+[MIT](LICENSE)

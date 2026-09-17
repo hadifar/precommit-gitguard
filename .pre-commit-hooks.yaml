@@ -1,0 +1,46 @@
+- id: no-direct-commit
+  name: "gitguard: block direct commits to protected branches"
+  description: >-
+    Refuses `git commit` on a protected branch (default: master, dev) unless
+    it's the commit finalizing an in-progress merge. Also handles CI/manual
+    `pre-commit run` against an already-finished checkout.
+  entry: gitguard-no-direct-commit
+  language: python
+  pass_filenames: false
+  always_run: true
+  stages: [pre-commit]
+
+- id: no-direct-push
+  name: "gitguard: block direct pushes to protected branches"
+  description: >-
+    Refuses to push non-merge commits directly onto a protected branch
+    (default: master, dev). Push-time companion to no-direct-commit, for
+    commits that slipped through (e.g. made with --no-verify) or arrived
+    another way.
+  entry: gitguard-no-direct-push
+  language: python
+  pass_filenames: false
+  always_run: true
+  stages: [pre-push]
+
+- id: branch-name
+  name: "gitguard: enforce branch naming convention"
+  description: >-
+    On first push of a new branch, requires its name to match a configured
+    pattern (default: feat|fix|refactor|docs|chore|release|hotfix)/...).
+  entry: gitguard-branch-name
+  language: python
+  pass_filenames: false
+  always_run: true
+  stages: [pre-push]
+
+- id: stale-branch
+  name: "gitguard: warn when branch is behind upstream"
+  description: >-
+    Advisory-only: after checking out a watched branch (default: master,
+    dev), fetches quietly and warns if it's behind its upstream.
+  entry: gitguard-stale-branch
+  language: python
+  pass_filenames: false
+  always_run: true
+  stages: [post-checkout]

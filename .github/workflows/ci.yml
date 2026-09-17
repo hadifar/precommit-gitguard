@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - run: pip install -e ".[dev]"
+      - run: pip install pre-commit
+
+      - name: unit tests
+        run: pytest -q
+
+      - name: dogfood this repo's own .pre-commit-config.yaml (pre-commit stage)
+        run: pre-commit run --all-files
+
+      - name: dogfood this repo's own .pre-commit-config.yaml (pre-push stage, e.g. pyright)
+        run: pre-commit run --all-files --hook-stage pre-push
+
+      - name: git identity for try-repo fixture
+        run: |
+          git config --global user.email "ci@example.com"
+          git config --global user.name "CI"
+          git config --global init.defaultBranch master
+
+      - name: pre-commit try-repo (no-direct-commit)
+        run: |
+          set -e
+          tmp=$(mktemp -d)
+          cd "$tmp"
+          git init --quiet
+          echo hi > a.txt
+          git add a.txt
+          pre-commit try-repo "$GITHUB_WORKSPACE" no-direct-commit --verbose --files a.txt && exit 1 || true
+
+      - name: pre-commit try-repo (branch-name)
+        run: |
+          set -e
+          tmp=$(mktemp -d)
+          cd "$tmp"
+          git init --quiet --initial-branch master
+          echo hi > a.txt
+          git add a.txt
+          git commit --quiet -m init
+          git checkout --quiet -b not-a-valid-name
+          PRE_COMMIT_REMOTE_BRANCH=refs/heads/not-a-valid-name \
+            pre-commit try-repo "$GITHUB_WORKSPACE" branch-name --verbose --hook-stage pre-push && exit 1 || true
+
+      - name: pre-commit try-repo (no-direct-push)
+        run: |
+          set -e
+          tmp=$(mktemp -d)
+          cd "$tmp"
+          git init --quiet --initial-branch master
+          echo hi > a.txt
+          git add a.txt
+          git commit --quiet -m init
+          PRE_COMMIT_REMOTE_BRANCH=refs/heads/master \
+            pre-commit try-repo "$GITHUB_WORKSPACE" no-direct-push --verbose --hook-stage pre-push && exit 1 || true
+
+      - name: pre-commit try-repo (stale-branch)
+        run: |
+          set -e
+          tmp=$(mktemp -d)
+          remote="$tmp/remote.git"
+          git init --quiet --bare --initial-branch master "$remote"
+
+          git clone --quiet "$remote" "$tmp/clone_a"
+          (
+            cd "$tmp/clone_a"
+            echo hi > a.txt
+            git add a.txt
+            git commit --quiet -m init
+            git push --quiet origin master
+          )
+
+          git clone --quiet "$remote" "$tmp/clone_b"
+
+          (
+            cd "$tmp/clone_a"
+            echo more >> a.txt
+            git add a.txt
+            git commit --quiet -m ahead
+            git push --quiet origin master
+          )
+
+          cd "$tmp/clone_b"
+          out=$(pre-commit try-repo "$GITHUB_WORKSPACE" stale-branch --verbose --hook-stage post-checkout 2>&1) || true
+          echo "$out"
+          echo "$out" | grep -q "behind"
